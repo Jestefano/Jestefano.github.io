@@ -1,4 +1,4 @@
-age_range,mes,Suma de positive_cases,Suma de deaths,Suma de Dosis1,Suma de Dosis2,Suma de Dosis3
+age_range,mes,positive_cases,deaths,Dosis1,Dosis2,Dosis3
 0-19,4,24295,126,3825,6584,0
 0-19,9,11421,48,290432,21937,1
 0-19,10,11576,51,834985,266609,79

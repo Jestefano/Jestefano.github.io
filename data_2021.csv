@@ -1,4 +1,4 @@
-age_range,mes,positive_cases,deaths,ratio,Dosis1,Dosis2,Dosis3,2dosis_cum
+age_range,mes,positive_cases,deaths,ratio,Dosis1,Dosis2,Dosis3,dosis_cum
 0-19,1,1052,8,0.007604563,1,4,0,4
 0-19,2,8953,67,0.007483525,528,0,0,4
 0-19,3,25102,143,0.005696757,9038,2570,0,2570

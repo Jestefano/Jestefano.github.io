@@ -1,58 +1,424 @@
-<html>
-<script src='https://d3js.org/d3.v5.min.js'></script>
+<!DOCTYPE html>
+<meta charset="utf-8">
 
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<h1>COVID-19 vaccination in peruvian older adults</h1>
+<p>This narrative visualization focuses on showing, from a graphical point of view, the effect of the vaccines in peruvian older adults (60+ of age) in 2021.</p>
+<p>To proceed, click Step1, Step2 and Step3 to follow the storyline. While you do so, you can interact with the options at the end as well to get more details</p>
+<ul>
+    <li id="Step1" >
+        <a onclick="clear_();Initial(5)">Step1</a>
+    </li>
+    <li id="Step2">
+        <a onclick="clear_();Initial(8)">Step2</a>
+    </li>
+    <li id="Step3">
+        <a onclick="clear_();Initial(12)">Step3</a>
+    </li>
+</ul>
+
+
+<body>
+<div id='viz_mortality'></div>
 <div id='viz_vaccines'></div>
+<div id='viz_cases'></div>
+<div id='viz_deseases'></div>
+<div id='viz_vaccines_detail1'></div>
+<div id='viz_vaccines_detail2'></div>
+<div id='viz_vaccines_detail3'></div>
+</body>
+
+<div align="center">
+    <input type="number" value="12" min="1" max="12" id="endMonth" onchange="clear_();Initial(this.value);"/>
+</div>
+
+<ul>
+    <li id="Initial" >
+        <a onclick="clear_();Initial(document.getElementById('endMonth').value)">Initial</a>
+    </li>
+    <li id="Detail Deseases">
+        <a onclick="clear_();DetailDeseases(document.getElementById('endMonth').value)">Detail Deseases</a>
+    </li>
+    <li id="DimensionMenu">
+        <a onclick="clear_();DetailVaccines(document.getElementById('endMonth').value)">Detail Vaccines</a>
+    </li>
+</ul>
+
 <script>
+function clear_() {
+    d3.select("#viz_mortality").selectAll("svg").remove();
+    d3.select("#viz_vaccines").selectAll("svg").remove();
+    d3.select("#viz_cases").selectAll("svg").remove();
+    d3.select("#viz_deseases").selectAll("svg").remove();
+    d3.select("#viz_vaccines_detail1").selectAll("svg").remove();
+    d3.select("#viz_vaccines_detail2").selectAll("svg").remove();
+    d3.select("body").style('cursor', 'default');
+};
 
-var margin = {top: 10, right: 30, bottom: 30, left: 60},
-    width = 460 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
+function Initial(month){
+    d3.select("#endMonth").property("value", month);
+    
+    var margin = {top: 30, right: 30, bottom: 30, left: 60},
+        width = 460 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+    
+    var svg = d3.select("#viz_mortality")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+    
+    data = d3.csv('https://jestefano.github.io/2021_60.csv', function(data){
+    
+    data = data.filter(function (d) {
+                return parseInt(d.mes) <= month;
+            });
+    
+    var sumstat = d3.nest() 
+      .key(function(d) { return d.age_range;})
+      .entries(data);
+    
+      var x = d3.scaleLinear()
+        .domain(d3.extent(data, function(d) { return +d.mes; }))
+        .range([ 0, width ]);
+      svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).ticks(month));
+    
+      // Add Y axis
+      var y = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return +d.deaths/d.positive_cases; })])
+        .range([ height, 0 ]);
+      svg.append("g")
+        .call(d3.axisLeft(y));
+      var res = sumstat.map(function(d){ return d.age_range }) // list of group names
+      var color = d3.scaleOrdinal()
+        .domain(res)
+        .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33'])
+    
+      // Draw the line
+      svg.selectAll(".line")
+          .data(sumstat)
+          .enter()
+          .append("path")
+            .attr("fill", "none")
+            .attr("stroke", function(d){ return color(d.age_range) })
+            .attr("stroke-width", 1.5)
+            .attr("d", function(d){
+              return d3.line()
+                .x(function(d) { return x(d.mes); })
+                .y(function(d) { return y(+d.deaths/d.positive_cases); })
+                (d.values)
+            });
+            
+    svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2-10))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("Desease % vs month (2021)");
+    
+    var svg2 = d3.select("#viz_vaccines")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+    
+    var sumstat2 = d3.nest() 
+      .key(function(d) { return d.age_range;})
+      .entries(data);
+    
+      var x2 = d3.scaleLinear()
+        .domain(d3.extent(data, function(d) { return +d.mes; }))
+        .range([ 0, width ]);
+      svg2.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x2).ticks(month));
+    
+      // Add Y axis
+      var y2 = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return +d.dosis_cum; })])
+        .range([ height, 0 ]);
+      svg2.append("g")
+        .call(d3.axisLeft(y2));
+      var res = sumstat2.map(function(d){ return d.age_range }) 
+      var color = d3.scaleOrdinal()
+        .domain(res)
+        .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33'])
+    
+      // Draw the line
+      svg2.selectAll(".line")
+          .data(sumstat2)
+          .enter()
+          .append("path")
+            .attr("fill", "none")
+            .attr("stroke", function(d){ return color(d.age_range) })
+            .attr("stroke-width", 1.5)
+            .attr("d", function(d){
+              return d3.line()
+                .x(function(d) { return x2(d.mes); })
+                .y(function(d) { return y2(+d.dosis_cum); })
+                (d.values)
+            })
 
-data = d3.csv('https://jestefano.github.io/data_2021.csv', function(data){
-  d3.select('#viz_vaccines')
-  .append('svg')
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append('g')
-    .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+    svg2.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2-10))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("# of vaccines in 60+ adults vs month (2021)");
+            
 
-  var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
-  .key(function(d) { return d.age_range;})
-  .entries(data);
+    });
+}
 
-  var x = d3.scaleLinear()
-    .domain(d3.extent(data, function(d) { return d.mes; }))
-    .range([ 0, width ]);
-  svg.append("g")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x).ticks(12));
+function DetailDeseases(month){
+    
+    d3.select("#endMonth").property("value", month);
+    
+    var margin = {top: 30, right: 30, bottom: 30, left: 60},
+        width = 460 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+    
+    var svg = d3.select("#viz_cases")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+    
+    data = d3.csv('https://jestefano.github.io/2021_60.csv', function(data){
 
-  // Add Y axis
-  var y = d3.scaleLinear()
-    .domain([0, d3.max(data, function(d) { return +d.deaths/d.positive_cases; })])
-    .range([ height, 0 ]);
-  svg.append("g")
-    .call(d3.axisLeft(y));
-  var res = sumstat.map(function(d){ return d.age_range }) // list of group names
-  var color = d3.scaleOrdinal()
-    .domain(res)
-    .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33'])
+    data = data.filter(function (d) {
+            return parseInt(d.mes) <= month;
+        });
+    
+    var sumstat = d3.nest() 
+      .key(function(d) { return d.age_range;})
+      .entries(data);
+    
+      var x = d3.scaleLinear()
+        .domain(d3.extent(data, function(d) { return +d.mes; }))
+        .range([ 0, width ]);
+      svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).ticks(month));
+    
+      // Add Y axis
+      var y = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return +d.positive_cases; })])
+        .range([ height, 0 ]);
+      svg.append("g")
+        .call(d3.axisLeft(y));
+      
+      var res = sumstat.map(function(d){ return d.age_range }) // list of group names
+      var color = d3.scaleOrdinal()
+        .domain(res)
+        .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33'])
+    
+      
+      // Draw the line
+      svg.selectAll(".line")
+          .data(sumstat)
+          .enter()
+          .append("path")
+            .attr("fill", "none")
+            .attr("stroke-width", 1.5)
+            .attr("stroke", function(d){ return color(d.age_range) })
+            .attr("d", function(d){
+              return d3.line()
+                .x(function(d) { return x(d.mes); })
+                .y(function(d) { return y(+d.positive_cases); })
+                (d.values)
+            })
+    
+    svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2-10))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("# of possitive cases in 60+ adults vs month (2021)");
+    
+    var svg2 = d3.select("#viz_deseases")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+    
+    var sumstat2 = d3.nest() 
+      .key(function(d) { return d.age_range;})
+      .entries(data);
+    
+      var x2 = d3.scaleLinear()
+        .domain(d3.extent(data, function(d) { return +d.mes; }))
+        .range([ 0, width ]);
+      svg2.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x2).ticks(month));
+    
+      // Add Y axis
+      var y2 = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return +d.deaths; })])
+        .range([ height, 0 ]);
+      svg2.append("g")
+        .call(d3.axisLeft(y2));
+      
+      // Draw the line
+      svg2.selectAll(".line")
+          .data(sumstat2)
+          .enter()
+          .append("path")
+            .attr("fill", "none")
+            .attr("stroke-width", 1.5)
+            .attr("stroke", function(d){ return color(d.age_range) })
+            .attr("d", function(d){
+              return d3.line()
+                .x(function(d) { return x2(d.mes); })
+                .y(function(d) { return y2(+d.deaths); })
+                (d.values)
+            })
+            
+    svg2.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2-10))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("# of deaths in 60+ adults vs month (2021)");
+    
+    });
+}
 
-  // Draw the line
-  svg.selectAll(".line")
-      .data(sumstat)
-      .enter()
-      .append("path")
-        .attr("fill", "none")
-        .attr("stroke", function(d){ return color(d.age_range) })
-        .attr("stroke-width", 1.5)
-        .attr("d", function(d){
-          return d3.line()
-            .x(function(d) { return x(d.year); })
-            .y(function(d) { return y(+d.deaths/d.positive_cases); })
-            (d.values)
-        })
-      })
-
+function DetailVaccines(month){
+    d3.select("#endMonth").property("value", month);
+    
+    var margin = {top: 30, right: 30, bottom: 30, left: 60},
+        width = 460 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+    
+    var svg = d3.select("#viz_vaccines_detail1")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+    
+    data = d3.csv('https://jestefano.github.io/2021_60.csv', function(data){
+    data = data.filter(function (d) {
+            return parseInt(d.mes) <= month;
+        });
+    
+        var sumstat = d3.nest() // nest function allows to group the calculation per level of a factor
+      .key(function(d) { return d.age_range;})
+      .entries(data);
+    
+      var x = d3.scaleLinear()
+        .domain(d3.extent(data, function(d) { return +d.mes; }))
+        .range([ 0, width ]);
+      svg.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x).ticks(month));
+    
+      // Add Y axis
+      var y = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return +d.Dosis1; })])
+        .range([ height, 0 ]);
+      svg.append("g")
+        .call(d3.axisLeft(y));
+      var res = sumstat.map(function(d){ return d.age_range }) // list of group names
+      var color = d3.scaleOrdinal()
+        .domain(res)
+        .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33'])
+    
+      // Draw the line
+      svg.selectAll(".line")
+          .data(sumstat)
+          .enter()
+          .append("path")
+            .attr("fill", "none")
+            .attr("stroke", function(d){ return color(d.age_range) })
+            .attr("stroke-width", 1.5)
+            .attr("d", function(d){
+              return d3.line()
+                .x(function(d) { return x(d.mes); })
+                .y(function(d) { return y(+d.Dosis1); })
+                (d.values)
+            })
+    
+    svg.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2-10))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("# of first dosis in 60+ adults vs month (2021)");
+    
+            
+    var svg2 = d3.select("#viz_vaccines_detail2")
+      .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform",
+              "translate(" + margin.left + "," + margin.top + ")");
+    
+    var sumstat2 = d3.nest() 
+      .key(function(d) { return d.age_range;})
+      .entries(data);
+    
+      var x2 = d3.scaleLinear()
+        .domain(d3.extent(data, function(d) { return +d.mes; }))
+        .range([ 0, width ]);
+      svg2.append("g")
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x2).ticks(month));
+    
+      // Add Y axis
+      var y2 = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return +d.Dosis2; })])
+        .range([ height, 0 ]);
+      svg2.append("g")
+        .call(d3.axisLeft(y2));
+      var res = sumstat2.map(function(d){ return d.age_range }) 
+      
+      // Draw the line
+      svg2.selectAll(".line")
+          .data(sumstat2)
+          .enter()
+          .append("path")
+            .attr("fill", "none")
+            .attr("stroke-width", 1.5)
+            .attr("stroke", function(d){ return color(d.age_range) })
+            .attr("d", function(d){
+              return d3.line()
+                .x(function(d) { return x2(d.mes); })
+                .y(function(d) { return y2(+d.Dosis2); })
+                (d.values)
+            })
+            
+    svg2.append("text")
+        .attr("x", (width / 2))             
+        .attr("y", 0 - (margin.top / 2-10))
+        .attr("text-anchor", "middle")  
+        .style("font-size", "16px") 
+        .style("text-decoration", "underline")  
+        .text("# of second dosis in 60+ adults vs month (2021)");
+    
+    });
+}
+Initial("5");
 </script>
 </html>
